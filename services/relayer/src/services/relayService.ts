@@ -24,7 +24,7 @@ import type {
 import { RelayErrorCodes } from '../types';
 import { mapSimulationError } from './mapSimulationError';
 import { mapSubmissionError } from './mapSubmissionError';
-import { recordSubmitLatency } from '../metrics';
+import { recordSubmitLatency, relaySubmissionDuration } from '../metrics';
 
 const SIGNED_TX_PARAMETER = 'signedTransactionXdr';
 const startTime = Date.now();
@@ -177,7 +177,9 @@ export class RelayService implements RelayServiceContract {
     request: RelayExecuteRequest,
     options?: RelayExecutionOptions
   ): Promise<RelayExecuteResponse> {
+    const validateStart = Date.now();
     const validation = await this.validateRelay(request, options);
+    relaySubmissionDuration.observe('validate', (Date.now() - validateStart) / 1000);
     if (!validation.valid || validation.requiresStepUp) {
       return {
         success: false,
@@ -263,6 +265,7 @@ export class RelayService implements RelayServiceContract {
       });
       const submitDurationSeconds = (Date.now() - submitStart) / 1000;
       recordSubmitLatency(submitDurationSeconds);
+      relaySubmissionDuration.observe('execute', submitDurationSeconds);
 
       return {
         success: true,

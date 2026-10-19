@@ -58,7 +58,12 @@ export interface ShutdownOptions {
   exit?: (code: number) => void;
 }
 
-export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30_000;
+/**
+ * Kubernetes sends SIGTERM and waits `terminationGracePeriodSeconds` (default
+ * 30s) before SIGKILL. 25s leaves a 5s margin for the preStop hook, endpoint
+ * propagation and process exit so the drain finishes before the pod is killed.
+ */
+export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 25_000;
 
 /** Signals that mean "wind down", as opposed to "stop right now". */
 export const SHUTDOWN_SIGNALS = ['SIGTERM', 'SIGINT'] as const;
